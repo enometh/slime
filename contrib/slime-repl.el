@@ -391,6 +391,9 @@ joined together."))
 
 (slime-define-keys slime-repl-mode-map
   ("\C-m" 'slime-repl-return)
+;madhu 071115
+  (")" 'slime-lispmstyle-close-paren))
+  ("]" 'slime-lispmstyle-close-paren))
   ([return] 'slime-repl-return)
   ("\C-j" 'slime-repl-newline-and-indent)
 ;madhu 170720  ("\C-\M-m" 'slime-repl-closing-return)
@@ -698,6 +701,35 @@ balanced."
         (t
          (slime-repl-newline-and-indent)
          (message "[input not complete]"))))
+
+
+(defvar slime-lispmstyle-close-paren-enabled t)
+
+;; ;madhu 071115, SLIME REPL version of:
+;; <URL:http://www.eurogaran.com/downloads/lisp/emacs/lispmstyle.el>
+;; <URL:http://paste.lisp.org/display/50883>
+
+(defun slime-lispmstyle-close-paren ()
+  (interactive)
+  (insert ")" )
+ (when  slime-lispmstyle-close-paren-enabled
+  (let ((slime-repl-input-end-mark
+	 ;; broken by heller 2008-09-21 Deleted. It was always at
+	 ;; the end of buffer. Use point-max instead.
+	 (if (boundp 'slime-repl-input-end-mark)
+	     slime-repl-input-end-mark
+	   (point-max))))
+    (if (slime-input-complete-p
+	 slime-repl-input-start-mark
+	 (if (boundp 'slime-repl-return-behaviour)
+	     ;; broken by heller 2008-03-14 slime-repl-return-behaviour
+	     ;; deleted.
+	     (ecase slime-repl-return-behaviour
+	       (:send-only-if-after-complete
+		(min (point) slime-repl-input-end-mark))
+	       (:send-if-complete slime-repl-input-end-mark))
+	   (min (point) slime-repl-input-end-mark)))
+	(slime-repl-send-input t)))))
 
 (defun slime-repl-recenter-if-needed ()
   "Make sure that (point) is visible."
