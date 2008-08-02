@@ -845,7 +845,9 @@ to do this, this factors in the length of the inserted header itself."
     (ecase type
       ((:unsigned-word :unsigned-byte :unsigned-natural
                        :unsigned-long :unsigned-half-long
-                       :unsigned-3byte :unsigned-long32)
+                       :unsigned-3byte
+                       :unsigned-long :unsigned-half-long 
+                       :unsigned-3byte :unsigned-long32 :func)
        (label-value-line name (inspect::component-ref-v object access type)))
       ((:lisp :value :func)
        (label-value-line name (inspect::component-ref object access)))
