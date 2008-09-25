@@ -7628,7 +7628,7 @@ and skips comments."
     (save-match-data
       (end-of-defun)
       (let ((end (point)))
-        (beginning-of-defun)
+        (beginning-of-sexp)
         (list (point) end)))))
 
 (defun slime-beginning-of-symbol ()
