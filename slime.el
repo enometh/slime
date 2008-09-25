@@ -7654,13 +7654,17 @@ and skips comments."
   (apply #'buffer-substring-no-properties
          (slime-region-for-defun-at-point)))
 
+(defvar slime-region-for-defun-at-point-fix-2008-03-18 nil)
+
 (defun slime-region-for-defun-at-point ()
   "Return the start and end position of defun at point."
   (save-excursion
    (save-match-data
     (end-of-defun)
     (let ((end (point)))
-      (beginning-of-defun)
+      (if slime-region-for-defun-at-point-fix-2008-03-18
+          (beginning-of-sexp)
+        (beginning-of-defun))
       (let ((start (point))
             (local-funs (ignore-errors
                          (save-excursion
