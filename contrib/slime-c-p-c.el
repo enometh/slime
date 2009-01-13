@@ -28,6 +28,33 @@
    (while slime-c-p-c-init-undo-stack
      (eval (pop slime-c-p-c-init-undo-stack)))))
 
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;; ;madhu 251005 broken by stassats in aug 2025 in commits ca3b367b00
+;; 5d292a981d 19eac487. which removed the c-p-c completion ui removed
+;; code checked into slime-c-p-c-phoenix.el as yet unwired.
+
+(defcustom slime-when-complete-filename-expand nil
+  "Use comint-replace-by-expanded-filename instead of
++comint-dynamic-complete-as-filename to complete file names"
+  :group 'slime-mode
+  :type 'boolean)
+
+(defun slime-maybe-complete-as-filename ()
+   "If point is at a string starting with \", complete it as filename.
+ Return nil if point is not at filename."
+   (when (save-excursion (re-search-backward "\"[^ \t\n]+\\="
+                                            (max (point-min)
+                                                 (- (point) 1000)) t))
+     (let ((comint-completion-addsuffix '("/" . "\"")))
+       (if slime-when-complete-filename-expand
+	   (comint-replace-by-expanded-filename)
+	 (comint-dynamic-complete-as-filename))
+      t)))
+
 
 (defun slime-complete-symbol* ()
   "Expand abbreviations and complete the symbol at point."
