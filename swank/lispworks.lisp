@@ -229,8 +229,7 @@
     (etypecase arglist
       ((member :dont-know) 
        :not-available)
-      (list
-       (replace-strings-with-symbols arglist)))))
+      (list arglist))))
 
 (defimplementation function-name (function)
   (nth-value 2 (function-lambda-expression function)))
