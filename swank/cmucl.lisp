@@ -28,14 +28,17 @@
 
 ;;; UTF8
 
+#+unicode
 (locally (declare (optimize (ext:inhibit-warnings 3)))
   ;; Compile and load the utf8 format, if not already loaded.
   (stream::find-external-format :utf-8))
 
+#+unicode
 (defimplementation string-to-utf8 (string)
   (let ((ef (load-time-value (stream::find-external-format :utf-8) t)))
     (stream:string-to-octets string :external-format ef)))
 
+#+unicode
 (defimplementation utf8-to-string (octets)
   (let ((ef (load-time-value (stream::find-external-format :utf-8) t)))
     (stream:octets-to-string octets :external-format ef)))
@@ -109,7 +112,7 @@
 
 (defun make-socket-io-stream (fd buffering external-format)
   "Create a new input/output fd-stream for FD."
-  (cond (external-format
+  (cond #+unicode (external-format
          (sys:make-fd-stream fd :input t :output t
                              :element-type 'character
                              :buffering buffering
@@ -2468,3 +2471,17 @@ int main (int argc, char** argv) {
     (loop for n in names
        when (funcall matchp prefix n)
        collect n)))
+
+#+unicode
+(defimplementation codepoint-length (string)
+  "Return the number of code points in the string.  The string MUST be
+  a valid UTF-16 string."
+  (do ((len (length string))
+       (index 0 (1+ index))
+       (count 0 (1+ count)))
+      ((>= index len)
+       count)
+    (multiple-value-bind (codepoint wide)
+	(lisp:codepoint string index)
+      (declare (ignore codepoint))
+      (when wide (incf index)))))
