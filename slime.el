@@ -1133,13 +1133,13 @@ DIRECTORY change to this directory before starting the process.
                        nil nil '(slime-connect-port-history . 1)))
                      nil t))
   (slime-setup)
-  (when (and slime-close-old-connections
-             interactive-p
-             slime-net-processes
-             (if (eq slime-close-old-connections 'ask)
-                 (y-or-n-p "Close old connections first? ")
-                 t))
-    (slime-disconnect-all))
+;;   (when (and slime-close-old-connections
+;;              interactive-p
+;;              slime-net-processes
+;;              (if (eq slime-close-old-connections 'ask)
+;;                  (y-or-n-p "Close old connections first? ")
+;;                  t))
+;;     (slime-disconnect-all))
   (message "Connecting to Swank on port %S.." port)
   (slime-setup-connection (apply 'slime-net-connect host port parameters)))
 
