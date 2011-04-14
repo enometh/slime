@@ -7111,7 +7111,10 @@ is setup, unless the user already set one explicitly."
   (let ((needed (cl-remove-if (lambda (s)
                                 (member (cl-subseq (symbol-name s) 1)
                                         (mapcar #'downcase
-                                                (slime-lisp-modules))))
+                                                (mapcar
+                                                 (lambda (x)
+                                                   (if (stringp x) x (symbol-name x)))
+                                                 (slime-lisp-modules)))))
                               slime-required-modules)))
     (when needed
       ;; No asynchronous request because with :SPAWN that could result
