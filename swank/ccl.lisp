@@ -182,6 +182,7 @@
 
 ;; Needed because `ccl:report-compiler-warning' would return
 ;; "Nonspecific warning".
+#+nil
 (defmethod compiler-warning-short-message ((c ccl::shadowed-typecase-clause))
   (princ-to-string c))
 
