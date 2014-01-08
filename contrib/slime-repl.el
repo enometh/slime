@@ -928,6 +928,20 @@ Empty strings and duplicates are ignored."
 (defvar slime-repl-history-pattern nil
   "The regexp most recently used for finding input history.")
 
+(defvar slime-repl-eli-history-behavior nil
+  "If Non-NIL Mimic ELI behaviour of inserting the previous commands at the point instead of erasing all input and inserting the previous input at the REPL." )
+
+(defun slime-repl-insert-history (direction pos min-pos max-pos content)
+  (when (slime-repl-history-search-in-progress-p)
+    (let* ((dir-of-previous (if (eq direction 'backward) 'forward 'backward))
+           (previous-index (slime-repl-position-in-history pos dir-of-previous ""))
+           (previous (nth previous-index slime-repl-input-history)))
+      (let ((prev-point (point)))
+        (backward-char (length previous))
+        (delete-region (min (point) prev-point)
+                       (max (point) prev-point)))))
+  (insert-and-inherit content))
+
 (defun slime-repl-history-replace (direction &optional regexp)
   "Replace the current input with the next line in DIRECTION.
 DIRECTION is 'forward' or 'backward' (in the history list).
@@ -942,7 +956,10 @@ If REGEXP is non-nil, only lines matching REGEXP are considered."
                                               (slime-repl-current-input)))
          (msg nil))
     (cond ((and (< min-pos pos) (< pos max-pos))
-           (slime-repl-replace-input (nth pos slime-repl-input-history))
+	   (if slime-repl-eli-history-behavior
+               (slime-repl-insert-history direction pos min-pos max-pos
+                                          (nth pos slime-repl-input-history))
+             (slime-repl-replace-input (nth pos slime-repl-input-history)))
            (setq msg (format "History item: %d" pos)))
           ((not slime-repl-wrap-history)
            (setq msg (cond ((= pos min-pos) "End of history")
