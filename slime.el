@@ -3636,6 +3636,7 @@ more than one space."
 (put 'slime-space 'delete-selection t) ; for delete-section-mode & CUA
 
 (defun slime-echo-arglist ()
+  (interactive)
   (when (slime-background-activities-enabled-p)
     (let ((op (slime-operator-before-point)))
       (when op
@@ -3730,6 +3731,7 @@ for the most recently enclosed macro or function."
       (cond ((save-excursion (re-search-backward "[^() \n\t\r]+\\=" nil t))
              (completion-at-point))
             ((memq (char-before) '(?\t ?\ ))
+             (break)                    ;madhu BOGUS 140413
              (slime-echo-arglist))))))
 
 (make-obsolete 'slime-indent-and-complete-symbol
