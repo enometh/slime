@@ -4070,6 +4070,8 @@ the display stuff that we neither need nor want."
 Note: If a prefix argument is in effect then the result will be
 inserted in the current buffer."
   (interactive (list (slime-read-from-minibuffer "Slime Eval: ")))
+  (when (equal current-prefix-arg '(16))
+     (insert " ;;=> "))
   (cl-case current-prefix-arg
     ((nil)
      (slime-eval-with-transcript `(swank:interactive-eval ,string
