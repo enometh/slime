@@ -199,7 +199,10 @@ If it's not in the cache, the cache will be updated asynchronously."
         (remove-hook 'eldoc-documentation-functions 'slime-autodoc t)
       ;; Reset eldoc-documentation-function to its (global) default value:
       (kill-local-variable 'eldoc-documentation-function))
-    (eldoc-mode 0))))
+    (eldoc-mode 0)))
+  (when (and nil (called-interactively-p 'interactive))
+    (setq eldoc-documentation-function
+	  (if slime-autodoc-mode 'slime-autodoc nil))))
 
 
 ;;; Noise to enable/disable slime-autodoc-mode
