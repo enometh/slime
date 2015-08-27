@@ -13,7 +13,7 @@
 (in-package swank/cmucl)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-
+#+nil;madhu 150827
   (let ((min-version #x20c))
     (assert (>= c:byte-fasl-file-version min-version)
             () "This file requires CMUCL version ~x or newer" min-version))
