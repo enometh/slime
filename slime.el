@@ -5569,10 +5569,10 @@ RESTARTS should be a list ((NAME DESCRIPTION) ...)."
   (cl-loop for (name string) in restarts
            for number from 0
            do (slime-insert-propertized
-               `(,@nil restart ,number
+               `(,@nil restart  ,(1+ number) ;madhu 150904
                        sldb-default-action sldb-invoke-restart
                        mouse-face highlight)
-               " " (sldb-in-face restart-number (number-to-string number))
+               " " (sldb-in-face restart-number (number-to-string (1+ number)))
                ": ["  (sldb-in-face restart-type name) "] "
                (sldb-in-face restart string))
            (insert "\n")))

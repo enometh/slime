@@ -2269,7 +2269,7 @@ Operation was KERNEL::DIVISION, operands (1 0).\"
         *pending-continuations*))
 
 (defun nth-restart (index)
-  (nth index *sldb-restarts*))
+  (nth (1- index) *sldb-restarts*))
 
 (defslimefun invoke-nth-restart (index)
   (let ((restart (nth-restart index)))
