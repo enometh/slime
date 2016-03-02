@@ -114,9 +114,13 @@ that the character is not escaped."
                ;; We're at a symbol, so make sure we get the whole symbol.
                (slime-end-of-symbol)))
         (let ((pt (point)))
-          (ignore-errors (up-list (if max-levels (- max-levels) -5)))
-          (ignore-errors (down-list))
-          (slime-parse-form-until pt suffix))))))
+	  (and				;madhu 160302
+	   (ignore-errors (if (< emacs-major-version 25)
+			      (up-list (if max-levels (- max-levels) -5))
+			      (up-list (if max-levels (- max-levels) -5)
+				       nil (not (slime-inside-comment-p)))))
+	   (ignore-errors (down-list)))
+	  (slime-parse-form-until pt suffix))))))
 
 (require 'bytecomp)
 
