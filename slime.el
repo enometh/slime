@@ -2467,6 +2467,9 @@ Debugged requests are ignored."
   "Record the fact that EVENT occurred."
   (when slime-log-events
     (with-current-buffer (slime-events-buffer)
+     (let* ((window (get-buffer-window nil t))
+            (restore-p (and window (pos-visible-in-window-p
+                                    t window t))))
       ;; trim?
       (when (> (buffer-size) 100000)
         (goto-char (/ (buffer-size) 2))
@@ -2478,7 +2481,9 @@ Debugged requests are ignored."
       (when (and (boundp 'outline-minor-mode)
                  outline-minor-mode)
         (hide-entry))
-      (goto-char (point-max)))))
+      (goto-char (point-max))
+      (when restore-p
+        (set-window-point window (point-max)))))))
 
 (defun slime-pprint-event (event buffer)
   "Pretty print EVENT in BUFFER with limited depth and width."
