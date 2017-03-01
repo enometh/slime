@@ -124,7 +124,8 @@
 If it's not in the cache, the cache will be updated asynchronously."
   (save-excursion
     (save-match-data
-      (let ((context (slime-autodoc--parse-context)))
+      (let ((context (when (slime-background-activities-enabled-p)
+		       (slime-autodoc--parse-context))))
 	(when context
 	  (let* ((cached (slime-autodoc--cache-get context))
 		 (multilinep (or force-multiline
