@@ -1041,7 +1041,7 @@ The rules for selecting the arguments are rather complicated:
 - If the prefix-arg is positive, read the command to start the
   process."
   (let ((table slime-lisp-implementations))
-    (cond ((not current-prefix-arg) (slime-lisp-options))
+    (cond ;;((not current-prefix-arg) (slime-lisp-options))
           ((eq current-prefix-arg '-)
            (let ((key (completing-read
                        "Lisp name: " (mapcar (lambda (x)
@@ -1052,7 +1052,9 @@ The rules for selecting the arguments are rather complicated:
           (t
            (cl-destructuring-bind (program &rest program-args)
                (split-string-and-unquote
-                (read-shell-command "Run lisp: " inferior-lisp-program
+                (read-shell-command "Run lisp: "
+                                    (or (car slime-inferior-lisp-program-history)
+                                        inferior-lisp-program)
                                     'slime-inferior-lisp-program-history))
              (let ((coding-system
                     (if (eq 16 (prefix-numeric-value current-prefix-arg))
