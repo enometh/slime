@@ -1344,7 +1344,7 @@ See `slime-start'."
            (cl-assert (not slime-connect-retry-timer))
            (setq slime-connect-retry-timer
                  (run-with-timer
-                  0.3 nil
+                  2 nil
                   #'slime-timer-call #'slime-attempt-connection
                   process (and retries (1- retries))
                   (1+ attempt)))))))
