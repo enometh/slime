@@ -528,10 +528,100 @@ Return NIL if the symbol is unbound."
 
 ;; (edit-path-to-cmucl-source-path #b1111010) => (0 3 1)
 
+;;;madhu 170923 try to ameliorate 100s of bogus definitions called from
+;;;C-c C-c compiling in the buffer
+
+;; location = (:location buffer position hints) |
+;;            (:error string)
+;; buffer = (:buffer <buffer>) |
+;;          (:file <filepath>)
+;; position = (:offset START OFFSET) |
+;;            (:function-name name) |
+;;            (:line START COLUMN) |
+;;            (:METHOD NAME SPECIALIZERS &REST QUALIFIERS) |
+;;            (:SOURCE-PATH SOURCE-PATH START-POSITION) |
+;;            (:EOF)
+
+(defun add-dspec-location (store dspec location)
+  (assert (eq (car store) :CAT-DSPEC)) ;; modifies STORE alist
+  (let ((buf-alist (let ((elt (assoc dspec (cdr store) :test #'equalp)))
+                     (unless elt
+                       (setq elt (list dspec :CAT-BUFFER))
+                       (setq store (nconc store (list elt))))
+                     (cdr elt))))
+    (ecase (car location)
+      (:error
+       (let ((err-list (let ((elt (assoc :ERROR-STRINGS (cdr buf-alist))))
+                         (unless elt
+                           (setq elt (list :ERROR-STRINGS :CAT-ERROR-STRINGS))
+                           (setq buf-alist (nconc buf-alist (list elt))))
+                         (cdr elt))))
+         (setq err-list (nconc err-list (list (second location))))))
+      (:location
+       (destructuring-bind (buffer-spec position-spec hints) (cdr location)
+         (ecase (car buffer-spec) ((:buffer :file :error) t))
+         (let ((pos-type-alist (let ((elt (assoc buffer-spec (cdr buf-alist)
+                                                 :test #'equalp)))
+                                 (unless elt
+                                   (setq elt (list buffer-spec :CAT-POS-TYPE))
+                                   (setq buf-alist
+                                         (nconc buf-alist (list elt))))
+                                 (cdr elt))))
+           (ecase (car position-spec)
+             ((:function-name :offset :line :method :source-path
+               :eof :position)
+              t))
+           (let ((pos-list
+                  (let ((elt (assoc (car position-spec) (cdr pos-type-alist))))
+                    (unless elt
+                      (setq elt (list (car position-spec) :CAT-POS))
+                      (setq pos-type-alist
+                            (nconc pos-type-alist (list elt))))
+                    (cdr elt))))
+             (setq pos-list (nconc pos-list
+                                   (list (cons (cdr position-spec)
+                                               hints))))))))))
+  nil)
+
+(defun dump-dspec-locations (store)
+  (assert (eq (car store) :CAT-DSPEC))
+  (let (ret)
+    (loop for (dspec . buf-alist) in (cdr store) do
+          (assert (eq (car buf-alist) :CAT-BUFFER))
+          (dolist (x (cdr buf-alist))
+            (if (not (eql (car x) :ERROR-STRINGS))
+                (destructuring-bind (buffer-spec . pos-type-alist) x
+                  (assert (eq (car pos-type-alist) :CAT-POS-TYPE))
+                  (loop for (pos-type . pos-list) in (cdr pos-type-alist) do
+                        (ecase pos-type
+                          ((:function-name :offset :line :method :source-path
+                            :position :eof)
+                           t))
+                        (dolist (pos-hints-spec (cdr pos-list))
+                          (destructuring-bind (pos . hints) pos-hints-spec
+                            (push (list dspec
+                                        (make-location buffer-spec
+                                                       (cons pos-type pos)
+                                                       hints))
+                                  ret))
+                          (let ((len (length (cdr pos-list))))
+                            (when (> len 1)
+                              (warn "dump-dspec-locations: dropping ~D locations for~& dpsec ~S of location type~& ~S" (1- len) dspec buffer-spec))
+                            (return)))))
+                (progn (assert (eql (second x) :CAT-ERROR-STRINGS))
+                       (dolist (string (cddr x))
+                         (push (list dspec
+                                     (list :ERROR string))
+                               ret))))))
+    (nreverse ret)))
+
 (defimplementation find-definitions (name)
-  (let ((locations (dspec:find-name-locations dspec:*dspec-classes* name)))
+  (let ((locations (dspec:find-name-locations dspec:*dspec-classes* name))
+        (store (list :CAT-DSPEC)))
     (loop for (dspec location) in locations
-          collect (list dspec (make-dspec-location dspec location)))))
+          do (add-dspec-location store dspec
+                                 (make-dspec-location dspec location)))
+    (dump-dspec-locations store)))
 
 
 ;;; Compilation 

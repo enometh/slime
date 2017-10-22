@@ -4681,6 +4681,7 @@ source-location."
   (cl-loop for (group . refs) in xref-alist do
            (slime-insert-propertized '(face bold) group "\n")
            (cl-loop for (label location) in refs do
+                  (let ((beg (point)))
                     (slime-propertize-region
                      (list 'slime-location location
                            'face 'font-lock-keyword-face)
@@ -4688,7 +4689,11 @@ source-location."
                      (slime-insert-propertized
                       '(mouse-face highlight)
                       (slime-one-line-ify label))
-                     (insert "\n"))))
+                     (insert "\n"))
+                    (add-text-properties
+                     beg (point)
+                     `(help-echo ,(format "slime-location: %s, label %s"
+                                          location label))))))
   ;; Remove the final newline to prevent accidental window-scrolling
   (delete-char -1)
   (insert " "))
