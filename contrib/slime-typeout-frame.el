@@ -87,6 +87,7 @@
     (slime-make-typeout-frame)))
 
 (defun slime-typeout-wrap-autodoc ()
+  ;; FIXME eldoc-message-function remains changed globally
   (setq eldoc-message-function 'slime-typeout-message-aux))
 
 (provide 'slime-typeout-frame)
