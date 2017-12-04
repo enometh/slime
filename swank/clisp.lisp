@@ -347,9 +347,14 @@ Return NIL if the symbol is unbound."
                (member (pathname-type path)
                        custom:*compiled-file-types* :test #'equal))
       (setq path
+            (or (let ((cfp (probe-file (make-pathname :defaults path
+                                                      :type "cfp"))))
+                  (and cfp
+                       (probe-file (with-open-file (stream cfp)
+                                     (read-line stream)))))
             (loop for suffix in custom:*source-file-types*
                thereis (probe-file (make-pathname :defaults path
-                                                  :type suffix)))))
+                                                  :type suffix))))))
     (values path type lines)))
 
 (defun fspec-location (name fspec)
