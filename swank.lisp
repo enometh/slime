@@ -708,7 +708,8 @@ e.g.: (restart-loop (http-request url) (use-value (new) (setq url new)))"
         ((:fd-handler :sigio)
          (note)
          (add-fd-handler socket #'serve))
-        ((nil) (serve-loop))))
+        ((nil) (unwind-protect (serve-loop)
+                 (close-socket socket) ))))
     port))
 
 (defun stop-server (port)
