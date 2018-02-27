@@ -1653,7 +1653,7 @@ expansion will be added to the REPL's history.)"
     (cond (repl-window
            (when window
              (delete-window window)))
-          (window
+          ((and window (not (window-dedicated-p window)))
            (set-window-buffer window repl-buffer))
           (t
            (pop-to-buffer repl-buffer)
