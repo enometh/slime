@@ -640,6 +640,16 @@ The stream calls READ-STRING when input is needed.")
 
 (defvar *auto-flush-interval* 0.2)
 
+#-eat-stas-boukarev-gray-bullshit
+(defun auto-flush-loop (stream)
+  (loop
+   (when (not (and (open-stream-p stream)
+                   (output-stream-p stream)))
+     (return nil))
+   (force-output stream)
+   (sleep *auto-flush-interval*)))
+
+#+eat-stas-boukarev-gray-bullshit
 (defun auto-flush-loop (stream interval &optional receive (flush #'force-output))
   (loop
    (when (not (and (open-stream-p stream)
@@ -650,11 +660,13 @@ The stream calls READ-STRING when input is needed.")
      (receive-if #'identity))
    (sleep interval)))
 
+#+eat-stas-boukarev-gray-bullshit
 (definterface make-auto-flush-thread (stream)
   "Make an auto-flush thread"
   (spawn (lambda () (auto-flush-loop stream *auto-flush-interval* nil))
          :name "auto-flush-thread"))
 
+#+eat-stas-boukarev-gray-bullshit
 (definterface really-finish-output (stream)
   "FINISH-OUTPUT or more"
   (finish-output stream))

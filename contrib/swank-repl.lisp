@@ -102,6 +102,11 @@ INPUT OUTPUT IO REPL-RESULTS"
     (typecase connection
       (multithreaded-connection
        (setf (mconn.auto-flush-thread connection)
+	     #-eat-stas-boukarev-gray-bullshit
+	     (spawn (lambda ()
+		      (auto-flush-loop out))
+		    :name "auto-flush-thread")
+	     #+eat-stas-boukarev-gray-bullshit
              (make-auto-flush-thread out))))
     (values in out io repl-results)))
 
@@ -217,6 +222,9 @@ INPUT OUTPUT IO REPL-RESULTS"
 
 (defun read-user-input-from-emacs ()
   (let ((tag (make-tag)))
+    #-eat-stas-boukarev-gray-bullshit
+    (force-output)
+    #+eat-stas-boukarev-gray-bullshit
     (really-finish-output *standard-output*)
     (send-to-emacs `(:read-string ,(current-thread-id) ,tag))
     (let ((ok nil))
@@ -282,6 +290,9 @@ LISTENER-EVAL directly, so that spacial variables *, etc are set."
                              (package-string-for-prompt *package*)))))))
 
 (defun send-repl-results-to-emacs (values)
+  #-eat-stas-boukarev-gray-bullshit
+  (finish-output)
+  #+eat-stas-boukarev-gray-bullshit
   (really-finish-output *standard-output*)
   (if (null values)
       (send-to-emacs `(:write-string "; No value" :repl-result))
