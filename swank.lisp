@@ -1315,6 +1315,9 @@ event was found."
 
 ;; FIXME: belongs to swank-repl.lisp
 (defun force-user-output ()
+  #-eat-stas-boukarev-gray-bullshit
+  (force-output (connection.user-io *emacs-connection*))
+  #+eat-stas-boukarev-gray-bullshit
   (really-finish-output (connection.user-io *emacs-connection*)))
 
 (add-hook *pre-reply-hook* 'force-user-output)
