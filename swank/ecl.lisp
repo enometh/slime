@@ -673,6 +673,7 @@
   (let ((annotations (ext:get-annotation name 'si::location :all)))
     (cond (annotations
            (loop for annotation in annotations
+                 when (second annotation)
                  collect (destructuring-bind (dspec file . pos) annotation
                            `(,dspec ,(make-file-location file pos)))))
           (t
