@@ -4631,6 +4631,15 @@ The most important commands:
   ([mouse-1] 'slime-mouse-show-xref)
   ([mouse-3] 'slime-mouse-goto-xref))
 
+(when nil
+(lookup-key slime-xref-mode-map [remap next-line])
+(lookup-key slime-xref-mode-map [remap previous-line])
+(lookup-key slime-xref-mode-map "n")
+(lookup-key slime-xref-mode-map "p"))
+
+(define-key slime-xref-mode-map [remap next-line] nil)
+(define-key slime-xref-mode-map [remap previous-line] nil)
+
 
 ;;;;; XREF results buffer and window management
 
