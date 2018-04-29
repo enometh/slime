@@ -1089,7 +1089,7 @@ The rules for selecting the arguments are rather complicated:
                             (coding-system slime-net-coding-system)
                             (init 'slime-init-command)
                             name
-                            (buffer "*inferior-lisp*")
+                            (buffer (concat "*inferior-lisp*<" program ">"))
                             init-function
                             env)
   "Start a Lisp process and connect to it.
