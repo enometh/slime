@@ -1675,7 +1675,7 @@ expansion will be added to the REPL's history.)"
 	(slime-eval `(swank-repl:create-repl nil)))
     (setf (slime-lisp-package) package)
     (setf (slime-lisp-package-prompt-string) prompt))
-  (slime-hide-inferior-lisp-buffer)
+  ;; don't! (slime-hide-inferior-lisp-buffer)
   (slime-init-output-buffer (slime-connection)))
 
 (defun slime-repl-event-hook-function (event)
