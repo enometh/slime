@@ -1713,6 +1713,7 @@ If the current buffer is not a REPL, don't do anything."
 
 (defun slime-repl-find-buffer-package ()
   (or (slime-search-buffer-package)
+      (slime-lisp-package-prompt-string) ; shorter string
       (slime-lisp-package)))
 
 (defun slime-repl-add-hooks ()
