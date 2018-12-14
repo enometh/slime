@@ -1,0 +1,100 @@
+;;; -*- Mode: LISP; Package: :cl-user; BASE: 10; Syntax: ANSI-Common-Lisp; -*-
+;;;
+;;;   Time-stamp: <>
+;;;   Touched: Fri Sep 28 14:25:20 2018 +0530 <enometh@meer.net>
+;;;   Bugs-To: enometh@meer.net
+;;;   Status: Experimental.  Do not redistribute
+;;;   Copyright (C) 2018 Madhu.  All Rights Reserved.
+;;;
+(in-package "CL-USER")
+
+#+nil
+(progn
+(defparameter *swank-source-dir* (pathname "~/h/elisp/pkg/slime/"))
+(defparameter *swank-binary-dir* (binary-directory *swank-source-dir*)))
+
+(defvar *swank-source-dir*
+  (truename "~/elisp/pkg/slime/")
+  #+nil
+  (merge-pathnames "swank/" (translate-logical-pathname "EXTERN:")))
+(defvar *swank-binary-dir*  (binary-directory *swank-source-dir*))
+
+(load (merge-pathnames "swank-loader.lisp" *swank-source-dir*))
+
+(unless (equal *swank-binary-dir*
+	       swank-loader::*fasl-directory*)
+  (warn "restting swank-loader::*fasl-directory from ~S to ~S"
+	swank-loader::*fasl-directory* *swank-binary-dir*)
+  (setq swank-loader::*fasl-directory* *swank-binary-dir*))
+
+(assert (equal *swank-binary-dir*
+	       swank-loader::*fasl-directory*))
+
+(defun list-src-files (names)
+  (mapcar (lambda (name)
+            (multiple-value-bind (dirs name)
+                (etypecase name
+                  (symbol (values '() name))
+                  (cons (values (butlast name) (car (last name)))))
+	      (namestring
+               (make-pathname
+		:directory (append '(:relative)
+				   (mapcar #'string-downcase dirs))
+		:name (string-downcase name)
+		:type nil #+nil"lisp"))))
+          names))
+
+;(list-src-files swank-loader::*swank-files*)
+;(list-src-files swank-loader::*contribs*)
+
+(defvar *swank-initialized* nil)
+
+(defun call-swank-before-init ()
+  (warn "CALLING SWANK::BEFORE-INIT")
+  (let ((args (mapcar
+	       (lambda (x) (merge-pathnames "contrib/" x))
+	       (list *swank-binary-dir*
+		     *swank-source-dir*))))
+    (when (or (not *swank-source-dir*)
+	      (not (equalp *swank-initialized* args)))
+      (funcall (find-symbol "BEFORE-INIT" "SWANK")
+	       (swank-loader::slime-version-string)
+	       args)
+    (setq *swank-initialized* args))))
+
+(defmacro def-swank-defsystem ()
+  `(mk:defsystem :swank
+     :source-pathname *swank-source-dir*
+     :binary-pathname *swank-binary-dir*
+     :finally-do (call-swank-before-init)
+     :source-extension "lisp"
+     :components (
+		  ,@(list-src-files swank-loader::*swank-files*)
+		  )))
+
+(def-swank-defsystem)
+
+#+nil
+(mk:oos :swank :load :compile-during-load t)
+
+(defmacro def-swank-contrib-defsystem ()
+  `(mk:defsystem :swank-contrib
+     :source-pathname *swank-source-dir*
+     :binary-pathname *swank-binary-dir*
+     :source-extension "lisp"
+     :components (
+		  (:module "contrib"
+		   :components (
+				,@(list-src-files swank-loader::*contribs*)
+				  )))))
+
+(def-swank-contrib-defsystem)
+
+#+nil
+(mk:oos :swank-contrib :load :compile-during-load t :test t)
+
+#+nil
+(mk:oos :swank-contrib :load :compile-during-load t)
+
+
+
