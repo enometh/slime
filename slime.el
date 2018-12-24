@@ -930,9 +930,17 @@ MODE is the name of a major mode which will be enabled.
            (set-syntax-table lisp-mode-syntax-table)
            ,@body
            (slime-popup-buffer-mode 1)
-           (funcall (if ,select 'pop-to-buffer 'display-buffer)
-                    (current-buffer))
-           (current-buffer))))))
+           (let (tmp)
+           (cond ((eq (window-buffer) (current-buffer)) t)
+                 ((and (setq tmp (get-buffer-window (current-buffer) 0))
+                       (window-live-p tmp))
+                  (raise-frame (window-frame tmp))
+                  (select-window tmp))
+                 (t
+                  (funcall (if ,select 'pop-to-buffer 'display-buffer)
+                           (current-buffer)
+                           '(nil (reusable-frames 0))))))
+           (current-buffer))) )))
 
 (defvar slime-popup-buffer-mode-map
   (let ((map (make-sparse-keymap)))
