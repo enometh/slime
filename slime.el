@@ -5851,10 +5851,6 @@ This is 0 if START and END at the same line."
   (when highlight (slime-highlight-sexp)))
 
 (defun slime--display-position (pos other-window recenter-arg)
-  ;;madhu - Our callers pass OTHER-WINDOW as either T or NIL. However
-  ;; T cannot be used directly as DISPLAY-BUFFER's ACTION argument.
-  (if (eq other-window t)
-      (setq other-window '(display-buffer-pop-up-window)))
   (with-selected-window (display-buffer (current-buffer) other-window)
     (goto-char pos)
     (recenter recenter-arg)))
