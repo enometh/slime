@@ -6759,6 +6759,9 @@ that value.
            (goto-char point)
            (slime-inspector-operate-on-point)))))
 
+;;(lookup-key slime-inspector-mode-map [mouse-1])
+;;(define-key slime-inspector-mode-map [mouse-1] nil)
+
 (defun slime-inspector-pop ()
   "Reinspect the previous object."
   (interactive)
