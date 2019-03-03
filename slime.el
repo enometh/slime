@@ -7866,3 +7866,8 @@ See `slime-output-target-to-marker'."
 ;; coding: latin-1-unix
 ;; End:
 ;;; slime.el ends here
+
+
+(defun slime-toggle-to-string-printing ()
+  (interactive)
+  (slime-eval-with-transcript `(cl:setq swank::*swank-to-string-print-state* (cl:not swank::*swank-to-string-print-state*))))

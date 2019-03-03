@@ -1513,12 +1513,23 @@ Emacs buffer."
                     (write-string ,msg  s))))
               (t msg)))))
 
+
+(defvar *swank-to-string-print-length* 6)
+(defvar *swank-to-string-print-level* 20)
+(defvar *swank-to-string-print-state* t)
+
 (defun to-string (object)
   "Write OBJECT in the *BUFFER-PACKAGE*.
 The result may not be readable. Handles problems with PRINT-OBJECT methods
 gracefully."
   (with-buffer-syntax ()
-    (let ((*print-readably* nil))
+    (let ((*print-readably* nil)
+          (*print-length* (if *swank-to-string-print-state*
+                              *swank-to-string-print-length*
+                              *print-length*))
+          (*print-level* (if *swank-to-string-print-state*
+                             *swank-to-string-print-level*
+                             *print-level*)))
       (without-printing-errors (:object object :stream nil)
         (prin1-to-string object)))))
 
@@ -1729,6 +1740,12 @@ Errors are trapped and invoke our debugger."
   (with-buffer-syntax ()
     (let* ((*print-readably* nil)
            (*print-right-margin* (- width 10))
+          (*print-length* (if *swank-to-string-print-state*
+                              *swank-to-string-print-length*
+                              *print-length*))
+          (*print-level* (if *swank-to-string-print-state*
+                             *swank-to-string-print-level*
+                             *print-level*))
            (output
              (with-output-to-string (out)
                (cond ((null values) "; No value")
