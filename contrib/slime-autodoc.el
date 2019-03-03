@@ -145,10 +145,13 @@ If it's not in the cache, the cache will be updated asynchronously."
 	 (slime-parse-form-upto-point levels))))
 
 (defun slime-autodoc--parsing-safe-p ()
-  (cond ((fboundp 'slime-repl-inside-string-or-comment-p)
-	 (not (slime-repl-inside-string-or-comment-p)))
-	(t
-	 (not (slime-inside-string-or-comment-p)))))
+  ;; allow autodoc expansion in comments
+  (cl-letf (((symbol-function 'slime-inside-string-or-comment-p)
+	     (function slime-inside-string-p)))
+    (cond ((fboundp 'slime-repl-inside-string-or-comment-p)
+	   (not (slime-repl-inside-string-or-comment-p)))
+	  (t
+	   (not (slime-inside-string-or-comment-p))))))
 
 (defun slime-autodoc--async (context multilinep)
   (slime-eval-async
