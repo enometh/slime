@@ -33,6 +33,8 @@
    *source-snippet-size*
    read-snippet
    read-snippet-from-string
+
+   skip-comments-and-whitespace
    ))
 
 (in-package swank/source-file-cache)

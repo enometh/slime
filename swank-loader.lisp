@@ -51,7 +51,7 @@
   #+cormanlisp '((swank corman) (swank gray))
   #+ecl '((swank ecl) (swank gray))
   #+clasp '(metering (swank clasp) (swank gray))
-  #+mkcl '((swank mkcl) (swank gray))
+  #+mkcl '((swank source-file-cache) (swank mkcl) (swank gray))
   #+mezzano '((swank mezzano) (swank gray))
   )
 
