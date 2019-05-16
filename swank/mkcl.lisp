@@ -9,7 +9,7 @@
 ;;; Administrivia
 
 (defpackage swank/mkcl
-  (:use cl swank/backend))
+  (:use cl swank/backend  swank/source-file-cache))
 
 (in-package swank/mkcl)
 
