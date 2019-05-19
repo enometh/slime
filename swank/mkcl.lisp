@@ -272,7 +272,8 @@
           (*buffer-start-position* position)
           (*buffer-string* string))
       (with-input-from-string (s string)
-        (when position (file-position position))
+        ;;madhu 190517 TODO support source-locations via source-truename
+        ;; bogus (when position (file-position position))
         (compile-from-stream s)))))
 
 (defun compile-from-stream (stream)
