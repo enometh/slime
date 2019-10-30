@@ -10,7 +10,8 @@
             "Matthias Koeppe  <mkoeppe@mail.math.uni-magdeburg.de>"
             "Tobias C. Rittweiler <tcr@freebits.de>")
   (:license "GPL")
-  (:slime-dependencies slime-parse slime-editing-commands slime-autodoc)
+  (:slime-dependencies slime-parse ;; slime-editing-commands
+		       slime-autodoc)
   (:swank-dependencies swank-c-p-c swank-arglists)
   (:on-load
    (push
