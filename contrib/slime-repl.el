@@ -399,7 +399,8 @@ joined together."))
   ((kbd "C-<up>") 'slime-repl-backward-input)
   ("\M-n" 'slime-repl-next-input)
   ((kbd "C-<down>") 'slime-repl-forward-input)
-  ("\M-r" 'slime-repl-previous-matching-input)
+  ("\M-r" ;; 'slime-repl-previous-matching-input)
+   'slime-repl-history-isearch-backward-regexp)
   ("\M-s" 'slime-repl-next-matching-input)
   ("\C-c\C-c" 'slime-interrupt)
   (" " 'slime-space)
@@ -454,6 +455,7 @@ joined together."))
     (add-hook 'kill-buffer-hook
               'slime-repl-safe-save-merged-history
               'append t))
+  (add-hook 'isearch-mode-hook 'slime-repl-history-isearch-setup nil t)
   (add-hook 'kill-emacs-hook 'slime-repl-save-all-histories)
   ;; At the REPL, we define beginning-of-defun and end-of-defun to be
   ;; the start of the previous prompt or next prompt respectively.
@@ -927,6 +929,337 @@ Empty strings and duplicates are ignored."
 
 (defvar slime-repl-history-pattern nil
   "The regexp most recently used for finding input history.")
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;; HERE
+;;;
+
+(defun slime-repl-after-pmark-p ()
+  "Return t if point is after the process output marker. BOGUS. Figure out
+what is needed for slime-repl"
+  (let ((process (get-buffer-process (current-buffer))))
+    (if process
+	(let ((pmark (process-mark process)))
+          (<= (marker-position pmark) (point)))
+      ;;; XXX nil
+      t)))
+
+(defcustom slime-repl-history-isearch nil
+  "Non-nil to Isearch in input history only, not in slime-repl buffer output.
+If t, usual Isearch keys like `C-r' and `C-M-r' in comint mode search
+in the input history.
+If `dwim', Isearch keys search in the input history only when initial
+point position is at the slime-repl command line.  When starting Isearch
+from other parts of the slime-repl buffer, they search in the slime-repl buffer.
+If nil, Isearch operates on the whole slime-repl buffer."
+  :type '(choice (const :tag "Don't search in input history" nil)
+		 (const :tag "When point is on command line initially, search history" dwim)
+		 (const :tag "Always search in input history" t))
+  :group 'slime-repl
+  :version "27.0")
+
+(defun slime-repl-history-isearch-backward ()
+  "Search for a string backward in input history using Isearch."
+  (interactive)
+  (setq slime-repl-history-isearch t)
+  (isearch-backward nil t))
+
+(defun slime-repl-history-isearch-backward-regexp ()
+  "Search for a regular expression backward in input history using Isearch."
+  (interactive)
+  (setq slime-repl-history-isearch t)
+  (isearch-backward-regexp nil t))
+
+(defvar-local slime-repl-history-isearch-message-overlay nil)
+
+;;; slime-repl-input-line-beginning-position includes the prompt
+;;; comint-line-beginning-position excludes the prompt and so this
+;;; corresponds to slime-repl-input-start-mark
+
+(defun slime-repl-history-isearch-setup ()
+  "Set up slime-repl for using Isearch to search the input history.
+Intended to be added to `isearch-mode-hook' in `slime-repl-mode'."
+  (when (and
+         ;; Prompt is not empty like in Async Shell Command buffers
+         ;; or in finished shell buffers XXX
+           (not (eq (save-excursion
+  		    (goto-char slime-repl-input-start-mark)
+  		    (forward-line 0)
+  		    (point))
+		    slime-repl-input-start-mark))
+	 (or (eq slime-repl-history-isearch t)
+	     (and (eq slime-repl-history-isearch 'dwim)
+		  ;; Point is at command line.
+		  (slime-repl-after-pmark-p))))
+    (setq isearch-message-prefix-add "history ")
+    (setq-local isearch-search-fun-function
+                #'slime-repl-history-isearch-search)
+    (setq-local isearch-message-function
+                #'slime-repl-history-isearch-message)
+    (setq-local isearch-wrap-function
+                #'slime-repl-history-isearch-wrap)
+    (setq-local isearch-push-state-function
+                #'slime-repl-history-isearch-push-state)
+    (add-hook 'isearch-mode-end-hook 'slime-repl-history-isearch-end nil t)))
+
+(defun slime-repl-history-isearch-end ()
+  "Clean up the slime-repl after terminating Isearch in slime-repl."
+  (if slime-repl-history-isearch-message-overlay
+      (delete-overlay slime-repl-history-isearch-message-overlay))
+  (setq isearch-message-prefix-add nil)
+  (setq isearch-search-fun-function 'isearch-search-fun-default)
+  (setq isearch-message-function nil)
+  (setq isearch-wrap-function nil)
+  (setq isearch-push-state-function nil)
+  (remove-hook 'isearch-mode-end-hook 'slime-repl-history-isearch-end t)
+  (unless isearch-suspended
+    (custom-reevaluate-setting 'slime-repl-history-isearch)))
+
+(defvar-local slime-repl-stored-incomplete-input nil
+  "Stored input for history cycling.")
+
+(defvar slime-repl-get-old-input (function slime-repl-get-old-input-default)
+  "Function that returns old text in slime-repl mode.
+This function is called when return is typed while the point is in old
+text.")
+
+(defun slime-repl-get-old-input-default ()
+  "Default for `slime-repl-get-old-input'.
+Return the current input if point is in the input area.  If point is in an old
+input field (different \"old input\")! return that."
+  (cond ((slime-repl-in-input-area-p)
+	 (goto-char (point-max))
+	 (let ((end (point)))
+	   (buffer-substring slime-repl-input-start-mark end)))
+	((and (get-text-property (point) 'slime-repl-old-input)
+	      (< (point) slime-repl-input-start-mark))
+	 (multiple-value-bind (beg end)
+	     (slime-property-bounds 'slime-repl-old-input)
+	   (let ((old-input (buffer-substring beg end))
+		 (offset (- (point) beg)))
+	     old-input)))))
+
+(defun slime-repl-delete-input ()
+  (interactive)
+  "Delete all input between accumulation and point."
+  (delete-region
+   ;; Can't use kill-region as it sets this-command
+    slime-repl-input-start-mark
+    (point-max)))
+
+(defun valid-slime-repl-input-history-position ()
+  (< -1 slime-repl-input-history-position (length slime-repl-input-history)))
+
+(defun slime-repl-goto-input (pos)
+  "Put input history item of the absolute history position POS."
+  ;; If leaving the edit line, save partial unfinished input.
+  (if (not (valid-slime-repl-input-history-position)) ;BOGUS
+      (setq slime-repl-stored-incomplete-input
+	    (funcall slime-repl-get-old-input)))
+  (assert (<= -1  slime-repl-input-history-position (length slime-repl-input-history)))
+  (setq slime-repl-input-history-position pos)
+  (slime-repl-delete-input)
+  (if (and pos (null slime-repl-input-history))
+      (insert (elt slime-repl-input-history pos))
+    ;; Restore partial unfinished input.
+    (when (> (length slime-repl-stored-incomplete-input) 0)
+      (insert slime-repl-stored-incomplete-input))))
+
+(defun slime-repl-restore-input ()
+  "Restore unfinished input."
+  (interactive)
+  (when (valid-slime-repl-input-history-position)
+    (slime-repl-delete-input)
+    (when (> (length slime-repl-stored-incomplete-input) 0)
+      (insert slime-repl-stored-incomplete-input)
+      (message "Input restored"))
+    (setq slime-repl-input-history-position -1)))
+
+(defun slime-repl-previous-input-new (arg)
+  "Cycle backwards through input history, saving input."
+  (interactive "*p")
+  (if (and (valid-slime-repl-input-history-position)
+	   (or		       ;; leaving the "end" of the ring
+	    (and (< arg 0)		; going down
+		 (= slime-repl-input-history-position 0))
+	    (and (> arg 0)		; going up
+		 (= slime-repl-input-history-position
+		     (1- (length slime-repl-input-history)))))
+	   slime-repl-stored-incomplete-input)
+      (slime-repl-restore-input)
+    (slime-repl-previous-matching-input-new "." arg)))
+
+(defun slime-repl-next-input-new (arg)
+  "Cycle forwards through input history."
+  (interactive "*p")
+  (slime-repl-previous-input-new (- arg)))
+
+(defun slime-repl-previous-matching-input-new (regexp arg)
+  "Search backwards through input history for match for REGEXP.
+\(Previous history elements are earlier commands.)
+With prefix argument N, search for Nth previous match.
+If N is negative, find the next or Nth next match."
+  (interactive (comint-regexp-arg "Previous input matching (regexp): "))
+  (assert (or (= arg 1) (= arg -1)))
+  (let* ((min-pos -1)
+         (max-pos (length slime-repl-input-history))
+         (pos0 slime-repl-input-history-position)
+	 (pos (slime-repl-position-in-history pos0 'backward regexp
+					      ;;XXX
+					      (slime-repl-current-input)
+					      )))
+    ;; Has a match been found?
+    (if (or (< pos 0) (= pos max-pos))
+	(user-error "not found")
+      ;; If leaving edit line, save partial input
+      (if (or (< slime-repl-input-history-position 0) (= slime-repl-input-history-position max-pos)) ; not yet on ring
+	  (setq slime-repl-stored-incomplete-input
+		(funcall slime-repl-get-old-input))
+      (setq slime-repl-input-history-position pos)
+      (unless isearch-mode
+	(let ((message-log-max nil))	; Do not write to *Messages*.
+	  (message "History item: %d" (1+ pos))))
+      (slime-repl-delete-input)
+      (insert (elt slime-repl-input-history slime-repl-input-history-position))))))
+
+(defun slime-repl-history-isearch-search ()
+  "Return the proper search function, for Isearch in input history."
+  (lambda (string bound noerror)
+    (let ((search-fun
+	   ;; Use standard functions to search within comint text
+	   (isearch-search-fun-default))
+	  found)
+      ;; Avoid lazy-highlighting matches in the comint prompt and in the
+      ;; output when searching forward.  Lazy-highlight calls this lambda
+      ;; with the bound arg, so skip the prompt and the output.
+;; XXX
+;;      (if (and bound isearch-forward (not (slime-repl-after-pmark-p)))
+;;	  (goto-char slime-output-end))
+      (or
+       ;; 1. First try searching in the initial comint text
+       (funcall search-fun string
+		(if isearch-forward bound slime-repl-input-start-mark)
+		noerror)
+       ;; 2. If the above search fails, start putting next/prev history
+       ;; elements in the comint successively, and search the string
+       ;; in them.  Do this only when bound is nil (i.e. not while
+       ;; lazy-highlighting search strings in the current comint text).
+       (unless bound
+	 (condition-case nil
+	     (progn
+	       (while (not found)
+		 (cond (isearch-forward
+			;; Signal an error here explicitly, because
+			;; `comint-next-input' doesn't signal an error.
+			(when (<= slime-repl-input-history-position
+				 0)
+			  (error "End of history; no next item"))
+			(slime-repl-next-input-new 1)
+			(goto-char slime-repl-input-start-mark))
+		       (t
+			;; Signal an error here explicitly, because
+			;; `comint-previous-input' doesn't signal an error.
+			(when (>= slime-repl-input-history-position
+				 (1- (length slime-repl-input-history)))
+			  (error "Beginning of history; no preceding item"))
+			(slime-repl-previous-input-new 1)
+			(goto-char (point-max))))
+		 (setq isearch-barrier (point) isearch-opoint (point))
+		 ;; After putting the next/prev history element, search
+		 ;; the string in them again, until comint-next-input
+		 ;; or comint-previous-input raises an error at the
+		 ;; beginning/end of history.
+		 (setq found (funcall search-fun string
+				      (unless isearch-forward
+					;; For backward search, don't search
+					;; in the comint prompt
+					slime-repl-input-start-mark)
+				      noerror)))
+	       ;; Return point of the new search result
+	       (point))
+	   ;; Return nil on the error "no next/preceding item"
+	   (error nil)))))))
+
+;; lexical-binding
+(eval-and-compile
+  (let ((lexical-binding t))
+    (eval
+     '(defun slime-repl-history-isearch-push-state ()
+	"Save a function restoring the state of input history search.
+Save `slime-repl-input-history-position' to the additional state parameter
+in the search status stack."
+	(lexical-let ((index slime-repl-input-history-position))
+	  (lambda (cmd)
+	    (slime-repl-history-isearch-pop-state cmd index))))
+     t)))
+
+(defun slime-repl-history-isearch-pop-state (_cmd hist-pos)
+  "Restore the input history search state.
+Go to the history element by the absolute history position HIST-POS."
+  (slime-repl-goto-input hist-pos))
+
+(defun slime-repl-history-isearch-wrap ()
+  "Wrap the input history search when search fails.
+Move point to the first history element for a forward search,
+or to the last history element for a backward search."
+  ;; When `slime-history-history-isearch-search' fails on reaching the
+  ;; beginning/end of the history, wrap the search to the first/last
+  ;; input history element.
+  (if isearch-forward
+      (slime-repl-goto-input (1- (length slime-repl-input-history)))
+    (slime-repl-goto-input 0))
+  (setq isearch-success t)
+  (goto-char (if isearch-forward slime-repl-input-start-mark
+	       (point-max))))
+
+(defun slime-repl-history-isearch-message  (&optional c-q-hack ellipsis)
+  "Display the input history search prompt.
+If there are no search errors, this function displays an overlay with
+the Isearch prompt which replaces the original comint prompt.
+Otherwise, it displays the standard Isearch message returned from
+the function `isearch-message'."
+  (if (not (and isearch-success (not isearch-error)))
+      ;; Use standard function `isearch-message' when not in comint prompt,
+      ;; or search fails, or has an error (like incomplete regexp).
+      ;; This function displays isearch message in the echo area,
+      ;; so it's possible to see what is wrong in the search string.
+      (isearch-message c-q-hack ellipsis)
+    ;; Otherwise, put the overlay with the standard isearch prompt over
+    ;; the initial comint prompt.
+    (if (overlayp slime-repl-history-isearch-message-overlay)
+	(move-overlay slime-repl-history-isearch-message-overlay
+		      (save-excursion
+			(goto-char slime-repl-input-start-mark)
+			(forward-line 0)
+			(point))
+                      slime-repl-input-start-mark)
+      (setq slime-repl-history-isearch-message-overlay
+	    (make-overlay (save-excursion
+			    (goto-char slime-repl-input-start-mark)
+			    (forward-line 0)
+			    (point))
+                          slime-repl-input-start-mark))
+      (overlay-put slime-repl-history-isearch-message-overlay 'evaporate t))
+    (overlay-put slime-repl-history-isearch-message-overlay
+		 'display (isearch-message-prefix ellipsis isearch-nonincremental))
+    (if (and (valid-slime-repl-input-history-position) (not ellipsis))
+	;; Display the current history index.
+	(message "History item: %d" slime-repl-input-history-position)
+      ;; Or clear a previous isearch message.
+      (message ""))))
+
+(when nil
+(lookup-key slime-repl-mode-map (kbd "M-r"))
+(define-key slime-repl-mode-map (kbd "M-r") 'slime-repl-history-isearch-backward-regexp)
+)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
 
 (defvar slime-repl-eli-history-behavior nil
   "If Non-NIL Mimic ELI behaviour of inserting the previous commands at the point instead of erasing all input and inserting the previous input at the REPL." )
