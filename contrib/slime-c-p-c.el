@@ -16,12 +16,25 @@
   (:on-load
    (push
     `(progn
+       ;; FIXME ;madhu 251005
+       (when nil
+       (add-hook 'slime-completion-at-point-functions
+		 #'slime-c-p-c-completion-at-point)
+       (add-hook 'slime-completion-at-point-functions
+		 #'slime-maybe-complete-as-filename)
+       (remove-hook 'slime-connected-hook 'slime-c-p-c-on-connect))
        ,@(when (featurep 'slime-repl)
                `((define-key slime-mode-map "\C-c\C-s"
                    ',(lookup-key slime-mode-map "\C-c\C-s"))
                  (define-key slime-repl-mode-map "\C-c\C-s"
                    ',(lookup-key slime-repl-mode-map "\C-c\C-s")))))
     slime-c-p-c-init-undo-stack)
+   ;; FIXME ;madhu 251005
+   (when nil
+   (add-hook 'slime-completion-at-point-functions
+	     #'slime-c-p-c-completion-at-point)
+   (add-hook 'slime-completion-at-point-functions
+	     #'slime-maybe-complete-as-filename))
    (define-key slime-mode-map "\C-c\C-s" 'slime-complete-form)
    (when (featurep 'slime-repl)
      (define-key slime-repl-mode-map "\C-c\C-s" 'slime-complete-form)))
@@ -47,14 +60,17 @@
 (defun slime-maybe-complete-as-filename ()
    "If point is at a string starting with \", complete it as filename.
  Return nil if point is not at filename."
-   (when (save-excursion (re-search-backward "\"[^ \t\n]+\\="
+  "If point is at a string starting with \", complete it as filename.
+Return nil if point is not at filename."
+  (when (save-excursion (re-search-backward "\"[^ \t\n]+\\="
                                             (max (point-min)
-                                                 (- (point) 1000)) t))
-     (let ((comint-completion-addsuffix '("/" . "\"")))
-       (if slime-when-complete-filename-expand
-	   (comint-replace-by-expanded-filename)
-	 (comint-dynamic-complete-as-filename))
-      t)))
+                                                 (- (point) 1000))
+					    t))
+    (let ((comint-completion-addsuffix '("/" . "\"")) partial-filename)
+      (if (and slime-when-complete-filename-expand
+	       (setq partial-filename (comint-match-partial-filename)))
+	  (replace-match (expand-file-name partial-filename) t t))
+      (comint--complete-file-name-data))))
 
 
 (defun slime-complete-symbol* ()

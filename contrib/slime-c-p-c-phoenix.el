@@ -119,3 +119,104 @@ terminates a current completion."
     (if (minibuffer-window-active-p (minibuffer-window))
         (minibuffer-message text)
       (message "%s" text))))
+
+
+;;(defun slime-c-p-c-completion-at-point ()
+;;  #'slime-complete-symbol*)
+
+
+(defvar orig-completion-styles)
+
+(defun slime-c-p-c-setup-completion-styles ()
+  (interactive)
+  (assert (not (boundp 'orig-completion-styles)))
+  (setq-local orig-completion-styles completion-styles)
+  (setq completion-styles (delete 'partial-completion completion-styles))
+  (setq completion-styles (cons  'partial-completion completion-styles)))
+
+
+(defun slime-c-p-c-restore-completion-styles ()
+  (interactive)
+  (assert (boundp 'orig-completion-styles))
+  (kill-local-variable 'completion-styles)
+  (setq completion-styles orig-completion-styles)
+  (kill-local-variable 'orig-completion-styles)
+  (makunbound 'orig-completion-styles))
+
+
+(cl-defun slime-c-p-c-completion-at-point ()
+  "Complete the symbol at point.
+slime-expand-abbreviations-and-complete
+Perform completion similar to `elisp-completion-at-point'."
+  (let* ((end (move-marker (make-marker) (slime-symbol-end-pos)))
+         (beg (move-marker (make-marker) (slime-symbol-start-pos)))
+         (prefix (buffer-substring-no-properties beg end))
+	 (completion-result (slime-contextual-completions beg end))
+         (completion-set (cl-first completion-result))
+         (completed-prefix (cl-second completion-result)))
+    (if (null completion-set)
+	(progn
+	   (slime-minibuffer-respecting-message
+                "Can't find completion for \"%s\"" prefix)
+	   (cl-return-from slime-c-p-c-completion-at-point
+	     (list beg end nil))))
+    ;; some XEmacs issue makes this distinction necessary
+    (when t
+    (cond ((> (length completed-prefix) (- end beg))
+	   (goto-char end)
+	   (insert-and-inherit completed-prefix)
+	   (delete-region beg end)
+	   (goto-char (+ beg (length completed-prefix))))
+	  (t nil)))
+    (cond ((and (member completed-prefix completion-set)
+                (slime-length= completion-set 1))
+	   (slime-minibuffer-respecting-message "Sole completion")
+           (when slime-complete-symbol*-fancy
+	     ;;Insert a space or close-paren based on arglist information.
+	     (let ((arglist (slime-retrieve-arglist (slime-symbol-at-point))))
+	       (unless (eq arglist :not-available)
+		 (let ((args
+			;; Don't intern these symbols
+			(let ((obarray (make-vector 10 0)))
+			  (cdr (read arglist))))
+		       (function-call-position-p
+			(save-excursion
+			  (backward-sexp)
+			  (equal (char-before) ?\())))
+		   (when function-call-position-p
+		     (setf (car completion-set)
+			   (concat completed-prefix
+				   (if (null args)
+				       ")"
+				     " "))))))))
+	   (when (and (slime-background-activities-enabled-p)
+                         (not (minibuffer-window-active-p (minibuffer-window))))
+                (slime-echo-arglist))
+	   (list beg (+ beg (length completed-prefix))
+		 completion-set))
+          ;; Incomplete
+          (t
+           (when (member completed-prefix completion-set)
+             (slime-minibuffer-respecting-message "Complete but not unique")
+	     )
+	   (when slime-c-p-c-unambiguous-prefix-p
+	     (let ((unambiguous-completion-length
+		    (cl-loop for c in completion-set
+			     minimizing (or (cl-mismatch completed-prefix c)
+                                            (length completed-prefix)))))
+	       (goto-char (+ beg unambiguous-completion-length))))
+	   (let ((end (max (point) end)))
+	     (list beg end completion-set))))))
+
+(when nil
+(cl-defun slime-c-p-c-completion-at-point ()
+  "Complete the symbol at point.
+sly-expand-abbreviations-and-complete
+Perform completion similar to `elisp-completion-at-point'."
+  (lexical-let (beg end)
+    (list (setq beg (slime-symbol-start-pos))
+	  (setq end (slime-symbol-end-pos))
+	  (completion-table-dynamic
+	   (lambda (_)
+	     (first (slime-contextual-completions beg end)))
+	   t)))))
