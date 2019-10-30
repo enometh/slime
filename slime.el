@@ -1931,6 +1931,15 @@ This is automatically synchronized from Lisp.")
       (when process
         (with-current-buffer (process-buffer process)
           (setq slime-inferior-lisp-connected connection)))
+      (let ((inferior-lisp-buffer
+             (process-buffer (slime-inferior-process connection))))
+        (when inferior-lisp-buffer
+          (with-current-buffer inferior-lisp-buffer
+            (when (and slime-buffer-connection
+                       (not (eq slime-buffer-connection connection)))
+              (warn "replacing slime-buffer-connection in %s: %s %s"
+                    (current-buffer) slime-buffer-connection connection))
+            (setq slime-buffer-connection connection))))
       (let ((fun (plist-get args ':init-function)))
         (when fun (funcall fun))))
     (message "Connected. %s" (if slime-show-words-of-encouragement
