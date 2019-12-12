@@ -628,12 +628,37 @@
       (let ((tmp (find-source-location (symbol-function name))))
         `(((defun ,name) ,tmp)))))
 
+(defvar *mkcl-build-location* nil
+  "If Non-NIL the location of the MKCL top-level directory currently
+on the file system. Eg.
+#p\"/7/gtk/mkcl-9999/\"
+Also see *MKCL-BUILD-LOCATION-ORIG*")
+
+(defvar *mkcl-build-location-orig* nil
+  "If Non-NIL the location of the MKCL top-level directory when the
+MKCL sources were compiled. Eg.
+ #p\"/var/tmp/portage/dev-lisp/mkcl-9999-r2/work/mkcl-9999/\"
+Used by MAYBE-TRANSLATE-MKCL-9999-FILENAME to remap
+SI:COMPILED-FUNCTION-FILE locations the tree under
+*MKCL-BUILD-LOCATION-ORIG* to a new tree under
+*MKCL-BUILD-LOCATION*")
+
+(defun maybe-translate-mkcl-9999-filename (file &key (base *mkcl-build-location-orig*) &aux tail)
+  (if (and file base (eql (car (pathname-directory file)) :absolute)
+           (setq tail (enough-namestring file base))
+           #+nil
+           (not (equal (setq tail (enough-namestring file base))
+                       (namestring file))))
+      (values (merge-pathnames tail *mkcl-build-location*) tail)
+      file))
+
 (defimplementation find-source-location (obj)
   (setf *tmp* obj)
   (or
    (typecase obj
      (function
       (multiple-value-bind (file pos) (ignore-errors (si::compiled-function-file obj))
+        (setq file (maybe-translate-mkcl-9999-filename file))
         (if (and file pos) 
             (make-location
               `(:file ,(if (stringp file) file (namestring file)))
