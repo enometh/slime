@@ -930,17 +930,9 @@ MODE is the name of a major mode which will be enabled.
            (set-syntax-table lisp-mode-syntax-table)
            ,@body
            (slime-popup-buffer-mode 1)
-           (let (tmp)
-           (cond ((eq (window-buffer) (current-buffer)) t)
-                 ((and (setq tmp (get-buffer-window (current-buffer) 0))
-                       (window-live-p tmp))
-                  (raise-frame (window-frame tmp))
-                  (select-window tmp))
-                 (t
-                  (funcall (if ,select 'pop-to-buffer 'display-buffer)
-                           (current-buffer)
-                           '(nil (reusable-frames 0))))))
-           (current-buffer))) )))
+           (funcall (if ,select 'pop-to-buffer 'display-buffer)
+                    (current-buffer))
+           (current-buffer))))))
 
 (defvar slime-popup-buffer-mode-map
   (let ((map (make-sparse-keymap)))
@@ -1723,8 +1715,8 @@ This doesn't mean it will connect right after Slime is loaded."
   (cond ((or (eq slime-auto-start 'always)
              (and (eq slime-auto-start 'ask)
                   (y-or-n-p "No connection.  Start Slime? ")))
+         (slime)
          (save-window-excursion
-           (slime)
            (while (not (slime-current-connection))
              (sleep-for 1))
            (slime-connection)))
@@ -1932,7 +1924,8 @@ This is automatically synchronized from Lisp.")
         (with-current-buffer (process-buffer process)
           (setq slime-inferior-lisp-connected connection)))
       (let ((inferior-lisp-buffer
-             (process-buffer (slime-inferior-process connection))))
+             (when (slime-inferior-process connection)
+               (process-buffer (slime-inferior-process connection)))))
         (when inferior-lisp-buffer
           (with-current-buffer inferior-lisp-buffer
             (when (and slime-buffer-connection
@@ -4325,10 +4318,17 @@ in Lisp when committed with \\[slime-edit-value-commit]."
 (defun slime-load-file (filename)
   "Load the Lisp file FILENAME."
   (interactive (list
-		(read-file-name "Load file: " nil nil
-				nil (if (buffer-file-name)
-                                        (file-name-nondirectory
-                                         (buffer-file-name))))))
+		(let* ((buffer-file-name (buffer-file-name))
+		       (guess (if buffer-file-name
+				  (if (string-match "\\.system$" buffer-file-name)
+				      (file-name-nondirectory buffer-file-name)
+				    (file-name-sans-extension
+				     (file-name-nondirectory
+				      buffer-file-name))))))
+		  (if (fboundp 'ffap-prompter)
+		      (ffap-prompter guess)
+		    (read-file-name "Load file: "
+				    default-directory nil nil guess nil)))))
   (let ((lisp-filename (slime-to-lisp-filename (expand-file-name filename))))
     (slime-eval-with-transcript `(swank:load-file ,lisp-filename))))
 
