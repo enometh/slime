@@ -1008,16 +1008,19 @@ See `slime-lisp-implementations'")
 (defvar slime-net-processes)
 (defvar slime-default-connection)
 
+(defvar slime-run-in-home-dir t)
+
 ;;;###autoload
 (defun slime (&optional command coding-system)
   "Start an inferior^_superior Lisp and connect to its Swank server."
   (interactive)
+  (let ((default-directory (if slime-run-in-home-dir "~" default-directory)))
   (slime-setup)
   (let ((inferior-lisp-program (or command inferior-lisp-program))
         (slime-net-coding-system (or coding-system slime-net-coding-system)))
     (slime-start* (cond ((and command (symbolp command))
                          (slime-lisp-options command))
-                        (t (slime-read-interactive-args))))))
+                        (t (slime-read-interactive-args)))))))
 
 (defvar slime-inferior-lisp-program-history '()
   "History list of command strings.  Used by `slime'.")
