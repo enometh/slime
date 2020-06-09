@@ -1687,7 +1687,13 @@ Used for all Lisp communication, except when overridden by
   "Return the connection to use for Lisp interaction.
 Return nil if there's no connection."
   (or slime-dispatching-connection
-      slime-buffer-connection
+      (let ((c slime-buffer-connection))
+        (when c
+          (if (process-live-p c)
+              c
+            (message "%s: resetting stale slime-buffer-connection: %s"
+                     (current-buffer) slime-buffer-connection)
+            (setq slime-buffer-connection nil))))
       slime-default-connection))
 
 (defun slime-connection ()
