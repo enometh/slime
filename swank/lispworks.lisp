@@ -325,6 +325,11 @@ Return NIL if the symbol is unbound."
 (defmethod env-internals:environment-display-debugger ((env slime-env))
   *debug-io*)
 
+(defmethod env-internals:environment-display-editor ((env slime-env) function &rest args)
+  (if function
+      (apply function args)
+      #'swank:ed-in-emacs))
+
 (defmethod env-internals:confirm-p ((e slime-env) &optional msg &rest args)
   (apply #'swank:y-or-n-p-in-emacs msg args))
 
