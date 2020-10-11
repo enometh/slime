@@ -208,6 +208,17 @@ If it's not in the cache, the cache will be updated asynchronously."
     (setq eldoc-documentation-function
 	  (if slime-autodoc-mode 'slime-autodoc nil))))
 
+;; ;madhu 260315 - earlier code
+;;  (cond (slime-autodoc-mode
+;;	 (set (make-local-variable 'eldoc-documentation-function) 'slime-autodoc)
+;;	 (set (make-local-variable 'eldoc-minor-mode-string) ""))
+;;	(t
+;;	 (set (make-local-variable 'eldoc-documentation-function)
+;;	      (default-value 'eldoc-documentation-function))
+;;	 (set (make-local-variable 'eldoc-minor-mode-string)
+;;	      (default-value 'eldoc-minor-mode-string))))
+
+
 
 ;;; Noise to enable/disable slime-autodoc-mode
 
