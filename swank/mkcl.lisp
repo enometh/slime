@@ -673,12 +673,14 @@ SI:COMPILED-FUNCTION-FILE locations the tree under
 ;;;; Profiling
 
 
+;;madhu 201128 - mk-defystem only
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "PROFILE")
   ;; At compile-time we need access to the profile package for the
   ;; the following code to be read properly.
   ;; It is a bit a shame we have to load the entire module to get that.
-  (require 'profile)))
+  (require 'profile)
+  (provide 'profile))
 
 
 (defimplementation profile (fname)
