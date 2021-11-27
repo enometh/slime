@@ -417,6 +417,8 @@
     (null nil)
     (symbol (symbol-package name))
     ((cons (eql ccl::traced)) (function-name-package (second name)))
+    ((cons (eql ccl::compiler-macro-function))
+     (function-name-package (second name)))
     ((cons (eql setf)) (symbol-package (second name)))
     ((cons (eql :internal)) (function-name-package (car (last name))))
     ((cons (and symbol (not keyword)) (or (cons list null)
