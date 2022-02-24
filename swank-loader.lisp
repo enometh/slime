@@ -29,6 +29,14 @@
 
 (cl:in-package :swank-loader)
 
+#+armedbear
+(cl:progn
+(cl:use-package "CL" "SWANK-LOADER")
+(cl:export '(init dump-image list-fasls *source-directory*
+          *fasl-directory*
+          *started-from-emacs*)))
+
+
 (defvar *started-from-emacs* nil)
 
 (defvar *source-directory*
