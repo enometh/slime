@@ -106,7 +106,9 @@
                        (:-ics "")
                        (:+ics "-ics")))
   #+clisp     (let ((s (lisp-implementation-version)))
-                (subseq s 0 (position #\space s)))
+                (concatenate 'string
+                             (subseq s 0 (position #\space s))
+                             (if (find :mt *features*) "_MT")))
   #+armedbear (lisp-implementation-version)
   #+ecl (ecl-version-string)
   #+clasp (clasp-version-string)
