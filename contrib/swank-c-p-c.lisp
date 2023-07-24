@@ -204,6 +204,9 @@ INPUT is used to guess the preferred case. Escape symbols when needed."
                   (:upcase   lowercase)
                   (:downcase uppercase)
                   (t         nil)))
+	      ;;madhu 230724 handle :|CAPSLOCK
+	      (and (> (length input) 0)
+		   (char= (char input 0) #\|))
               (some (lambda (el)
                       (or (member el '(#\: #\Space #\Newline #\Tab))
                           (multiple-value-bind (macrofun nonterminating)
