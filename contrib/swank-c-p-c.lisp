@@ -224,6 +224,9 @@ contains lower or upper case characters."
 
 ;;;;; Compound-prefix matching
 
+;;madhu 230724
+(defvar *compound-prefix-matcher-cache* (make-hash-table :test #'equalp))
+
 (defun make-compound-prefix-matcher (delimiter &key (test #'char=))
   "Returns a matching function that takes a `prefix' and a
 `target' string and which returns T if `prefix' is a
@@ -239,6 +242,8 @@ DELIMITER may be a character, or a list of characters."
 		      (character (list delimiter))
 		      (cons      (assert (every #'characterp delimiter))
 			         delimiter))))
+    (or (gethash delimiters *compound-prefix-matcher-cache*)
+	(setf (gethash delimiters *compound-prefix-matcher-cache*)
     (lambda (prefix target)
       (declare (type simple-string prefix target))
       (loop with tpos = 0
@@ -248,7 +253,7 @@ DELIMITER may be a character, or a list of characters."
 			  (if delimiter
 			      (setf tpos (position delimiter target :start tpos))
 			      (funcall test ch (aref target tpos)))))
-	    do (incf tpos)))))
+	    do (incf tpos)))))))
 
 
 ;;;;; Extending the input string by completion
