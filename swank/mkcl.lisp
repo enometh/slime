@@ -464,10 +464,10 @@
   (loop for f in (subseq *backtrace* start end)
         collect f))
 
-(defimplementation format-sldb-condition (condition)
+(defimplementation print-condition (condition stream)
   "Format a condition for display in SLDB."
   ;;(princ-to-string condition)
-  (format nil "~A~%In thread: ~S" condition mt:*thread*)
+  (format stream "~A~%In thread: ~S" condition mt:*thread*)
   )
 
 (defun frame-name (frame)
