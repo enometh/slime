@@ -537,7 +537,8 @@ Return NIL if the symbol is unbound."
          (let ((name (venv-ref (frame-venv frame) i)))
            (multiple-value-bind (v c) (ignore-errors (sys::eval-at frame name))
              (if c
-                 (format-sldb-condition c)
+                 (with-output-to-string (stream)
+                   (print-condition c stream))
                  v))))
         ((member (frame-type frame) '(compiled-fun sys-fun fun special-op))
          (let ((str (nth i (%parse-stack-values frame))))
