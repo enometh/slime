@@ -1245,7 +1245,9 @@ Return the created process."
     (comint-mode)
     (set (make-local-variable 'slime-inferior-lisp-connected) nil)
     (add-hook 'comint-preoutput-filter-functions 'slime-insert-inferior-lisp-output 0 t)
-    (let ((process-environment (append env process-environment)))
+    (let ((process-environment (append env process-environment))
+          ;; (process-connection-type nil) ;madhu 240906 251005
+          )
       (comint-exec (current-buffer) "inferior-lisp" program nil program-args))
     (lisp-mode-variables t)
     (let ((proc (get-buffer-process (current-buffer))))
