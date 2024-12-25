@@ -726,7 +726,19 @@ first."
   (stop-server port)
   (sleep 5)
   (create-server :port port :style style :dont-close dont-close))
- 
+
+#-no-thanks-stas-boukarev
+(defun accept-connections (socket style dont-close)
+  (unwind-protect
+       (let ((client (accept-connection socket :external-format nil
+                                               :buffering t)))
+         (authenticate-client client)
+         (serve-requests (make-connection socket client style)))
+    (unless dont-close
+      (%stop-server :socket socket))))
+
+
+#+no-thanks-stas-boukarev
 (defun accept-connections (socket style dont-close)
   (let (connection)
     (unwind-protect
