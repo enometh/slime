@@ -6640,23 +6640,26 @@ KILL-BUFFER hooks for the inspector buffer."
           (while (eq (char-before) ?\n)
             (backward-delete-char 1))
           (insert "\n" (fontify label "--------------------") "\n")
-          (save-excursion
-            (slime-inspector-insert-content content))
+          (slime-inspector-insert-content content
+          (lambda ()
           (when point
             (cl-check-type point cons)
             (ignore-errors
               (goto-char (point-min))
               (forward-line (1- (car point)))
-              (move-to-column (cdr point)))))))))
+              (move-to-column (cdr point)))))))))))
 
 (defvar slime-inspector-limit 500)
 
-(defun slime-inspector-insert-content (content)
+(defun slime-inspector-insert-content (content restore-point-cont)
   (slime-inspector-fetch-chunk
    content nil
    (lambda (chunk)
      (let ((inhibit-read-only t))
-       (slime-inspector-insert-chunk chunk t t)))))
+       (save-excursion
+         (slime-inspector-insert-chunk chunk t t))
+       (when restore-point-cont
+         (funcall restore-point-cont))))))
 
 (defun slime-inspector-insert-chunk (chunk prev next)
   "Insert CHUNK at point.
