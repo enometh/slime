@@ -806,9 +806,12 @@ Execute BODY with NAME's function slot set to FUNCTION."
   #+lisp=cl (ext:quit)
   #-lisp=cl (lisp:quit))
 
+;madhu 250118 without clisp-mt slime should not try to use any thread
+;features of clisp regardless of whether clisp supports mt
 
 (defimplementation preferred-communication-style ()
-  nil)
+  #+clisp-mt :spawn
+  #-clisp-mt nil)
 
 ;;; FIXME
 ;;;
@@ -831,29 +834,42 @@ Execute BODY with NAME's function slot set to FUNCTION."
 ;;;
 ;;; TCR (2009-07-30)
 
-#+#.(cl:if (cl:find-package "MP") '(:and) '(:or)) 
+#+clisp-mt
 (progn
   (defimplementation spawn (fn &key name)
     (mp:make-thread fn :name name))
 
-  (defvar *thread-plist-table-lock*
-    (mp:make-mutex :name "THREAD-PLIST-TABLE-LOCK"))
-
-  (defvar *thread-plist-table* (make-hash-table :weak :key)
-    "A hashtable mapping threads to a plist.")
-
   (defvar *thread-id-counter* 0)
 
-  (defimplementation thread-id (thread)
-    (mp:with-mutex-lock (*thread-plist-table-lock*)
-      (or (getf (gethash thread *thread-plist-table*) 'thread-id)
-          (setf (getf (gethash thread *thread-plist-table*) 'thread-id)
-                (incf *thread-id-counter*)))))
+  (defparameter *thread-id-map* (make-hash-table :weak :key))
+
+  (defvar *thread-id-map-lock*
+    (mp:make-mutex :name "thread-id-map-lock" :recursive-p t))
+
+  (defimplementation thread-id (target-thread)
+    (block thread-id
+      (mp:with-mutex-lock (*thread-id-map-lock*)
+        ;; Does TARGET-THREAD have an id already?
+        (maphash (lambda (id thread-pointer)
+                   (let ((thread (ext:weak-pointer-value thread-pointer)))
+                     (cond ((not thread)
+                            (remhash id *thread-id-map*))
+                           ((eq thread target-thread)
+                            (return-from thread-id id)))))
+                 *thread-id-map*)
+        ;; TARGET-THREAD not found in *THREAD-ID-MAP*
+        (let ((id (incf *thread-id-counter*))
+              (thread-pointer (ext:make-weak-pointer target-thread)))
+          (setf (gethash id *thread-id-map*) thread-pointer)
+          id))))
 
   (defimplementation find-thread (id)
-    (find id (all-threads)
-          :key (lambda (thread)
-                 (getf (gethash thread *thread-plist-table*) 'thread-id))))
+    (mp:with-mutex-lock (*thread-id-map-lock*)
+      (let* ((thread-ptr (gethash id *thread-id-map*))
+             (thread (and thread-ptr (ext:weak-pointer-value thread-ptr))))
+        (unless thread
+          (remhash id *thread-id-map*))
+        thread)))
 
   (defimplementation thread-name (thread)
     ;; To guard against returning #<UNBOUND>.
@@ -886,13 +902,13 @@ Execute BODY with NAME's function slot set to FUNCTION."
   (defimplementation thread-alive-p (thread)
     (mp:thread-active-p thread))
 
-  (defvar *mailboxes-lock* (make-lock :name "MAILBOXES-LOCK"))
+  (defvar *mailboxes-lock* (make-lock :name "mailboxes-lock"))
   (defvar *mailboxes* (list))
 
   (defstruct (mailbox (:conc-name mailbox.))
     thread
-    (lock (make-lock :name "MAILBOX.LOCK"))
-    (waitqueue  (mp:make-exemption :name "MAILBOX.WAITQUEUE"))
+    (lock (make-lock :name "mailbox.lock"))
+    (waitqueue  (mp:make-exemption :name "mailbox.waitqueue"))
     (queue '() :type list))
 
   (defun mailbox (thread)
@@ -924,7 +940,29 @@ Execute BODY with NAME's function slot set to FUNCTION."
              (setf (mailbox.queue mbox) (nconc (ldiff q tail) (cdr tail)))
              (return (car tail))))
          (when (eq timeout t) (return (values nil t)))
-         (mp:exemption-wait (mailbox.waitqueue mbox) lock :timeout 0.2))))))
+         (mp:exemption-wait (mailbox.waitqueue mbox) lock
+                            #+nil :timeout #+nil  0.2)))))
+
+  (let ((alist '())
+        (mutex (make-lock :name "register-thread")))
+
+    (defimplementation register-thread (name thread)
+      (declare (type symbol name))
+      (mp:with-mutex-lock (mutex)
+        (etypecase thread
+          (null
+           (setf alist (delete name alist :key #'car)))
+          (mp:thread
+           (let ((probe (assoc name alist)))
+             (cond (probe (setf (cdr probe) thread))
+                   (t (setf alist (acons name thread alist))))))))
+      nil)
+
+    (defimplementation find-registered (name)
+      (mp:with-mutex-lock (mutex)
+        (cdr (assoc name alist)))))
+
+)
  
 
 ;;;; Weak hashtables
