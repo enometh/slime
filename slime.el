@@ -4871,6 +4871,7 @@ This is used by `slime-goto-next-xref'")
   "Display the xref at point in the other window."
   (interactive)
   (let ((location (slime-xref-location-at-point)))
+    (xref-push-marker-stack (point-marker))
     (slime-show-source-location location t 1)))
 
 (defun slime-mouse-show-xref (event)
