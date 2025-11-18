@@ -48,8 +48,12 @@
   "Like autodoc information forcing multiline display."
   (interactive)
   (let ((doc (slime-autodoc t)))
-    (cond (doc (eldoc-message doc))
-	  (t (eldoc-message nil)))))
+      (with-output-to-temp-buffer "*Autodoc*"
+	(cl-letf (((symbol-function 'message)
+		   (lambda (&rest args)
+		     (princ (apply #'format args)))))
+	  (cond (doc (eldoc-message doc))
+		(t (eldoc-message nil)))))))
 
 ;; Must call eldoc-add-command otherwise (eldoc-display-message-p)
 ;; returns nil and eldoc clears the echo area instead.
