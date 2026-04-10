@@ -120,7 +120,8 @@
       (finish-output stream))
     char)
   #+eat-stas-boukarev-gray-bullshit
-  (write-char* data char))
+  (with-slime-output-stream stream
+    (write-char* data char)))
 
 (defmethod stream-write-string ((stream slime-output-stream) string
                                 &optional start end)
