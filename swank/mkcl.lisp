@@ -680,7 +680,7 @@ SI:COMPILED-FUNCTION-FILE locations the tree under
   ;; the following code to be read properly.
   ;; It is a bit a shame we have to load the entire module to get that.
   (require 'profile)
-  (provide 'profile))
+  (provide 'profile)))
 
 
 (defimplementation profile (fname)
