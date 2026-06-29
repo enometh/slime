@@ -392,8 +392,8 @@ joined together."))
 (slime-define-keys slime-repl-mode-map
   ("\C-m" 'slime-repl-return)
 ;madhu 071115
-  (")" 'slime-lispmstyle-close-paren))
-  ("]" 'slime-lispmstyle-close-paren))
+  (")" 'slime-lispmstyle-close-paren)
+  ("]" 'slime-lispmstyle-close-paren)
   ([return] 'slime-repl-return)
   ("\C-j" 'slime-repl-newline-and-indent)
 ;madhu 170720  ("\C-\M-m" 'slime-repl-closing-return)
