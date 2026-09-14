@@ -36,12 +36,19 @@
                 (etypecase name
                   (symbol (values '() name))
                   (cons (values (butlast name) (car (last name)))))
-	      (namestring
-               (make-pathname
-		:directory (append '(:relative)
-				   (mapcar #'string-downcase dirs))
-		:name (string-downcase name)
-		:type nil #+nil"lisp"))))
+	      (let* ((name
+		       (enough-namestring
+			 (make-pathname
+			   :directory (when dirs
+					(append '(:relative)
+						(mapcar #'string-downcase dirs)))
+			   :name (string-downcase name)
+			   :type "lisp"
+			   :version nil)))
+		     (len (length name))
+		     (p (- (length name) (length ".lisp"))))
+		(assert (string= ".lisp" name :start2 p))
+		(subseq name 0 p))))
           names))
 
 ;(list-src-files swank-loader::*swank-files*)
