@@ -812,10 +812,28 @@ INSTRUMENTED-FORM."
       (setf return-value (funcall instrumented-fn)))
     (funcall body-fn collected-forms return-value)))
 
+#+genera
+(progn
+(defun call-with-ignore-errors (fn)
+  (ignore-errors (funcall fn)))
+
+(defmacro _ignore-errors (&rest forms)
+  `(call-with-ignore-errors (lambda () ,@forms))))
+
+
 (definterface collect-macro-forms (form &optional env)
   "Collect subforms of FORM which undergo (compiler-)macro expansion.
 Returns two values: a list of macro forms and a list of compiler macro
 forms."
+  #+genera
+  (with-collected-macro-forms (macro-forms expansion)
+      (_ignore-errors (macroexpand-all form env))
+    (with-collected-macro-forms (compiler-macro-forms)
+        (handler-bind ((warning #'muffle-warning))
+          (_ignore-errors
+            (compile nil `(lambda () ,expansion))))
+      (values macro-forms compiler-macro-forms)))
+  #-genera
   (with-collected-macro-forms (macro-forms expansion)
       (ignore-errors (macroexpand-all form env))
     (with-collected-macro-forms (compiler-macro-forms)
@@ -1492,6 +1510,11 @@ but that thread may hold it more than once."
 
 ;;;; Floating point
 
+#+genera
+(defun %handle-float-nan (float)        ; see below
+  (handler-case (not (= float float))
+    (floating-point-invalid-operation () t)))
+
 (definterface float-nan-p (float)
   "Return true if FLOAT is a NaN value (Not a Number)."
   ;; When the float type implements IEEE-754 floats, two NaN values
@@ -1499,6 +1522,8 @@ but that thread may hold it more than once."
   ;; the predicate should return false. An implementation can
   ;; implement comparison with "unordered-signaling predicates", which
   ;; emit floating point exceptions.
+  #+genera(%handle-float-nan float)
+  #-genera
   (handler-case (not (= float float))
     ;; Comparisons never signal an exception other than the invalid
     ;; operation exception (5.11 Details of comparison predicates).
