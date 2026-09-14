@@ -62,15 +62,16 @@
   #+mkcl '((swank source-file-cache) (swank mkcl) (swank gray))
   #+mezzano '((swank mezzano) (swank gray))
   #+dotcl '((swank dotcl) (swank gray))
+  #+genera '((swank genera))
   )
 
 (defparameter *implementation-features*
   '(:allegro :lispworks :sbcl :clozure :cmu :clisp :ccl :corman :cormanlisp
-    :armedbear :gcl :ecl :scl :mkcl :clasp :mezzano :dotcl))
+    :armedbear :gcl :ecl :scl :mkcl :clasp :mezzano :dotcl :genera))
 
 (defparameter *os-features*
   '(:macosx :linux :windows :mswindows :win32 :solaris :darwin :sunos :hpux
-    :unix :mezzano :android :haiku :emscripten :wasi :cosmo))
+    :unix :mezzano :android :haiku :emscripten :wasi :cosmo :genera))
 
 (defparameter *architecture-features*
   '(:powerpc :ppc :ppc64 :x86 :x86-64 :x86_64 :amd64 :i686 :i586 :i486 :pc386 :iapx386
@@ -78,7 +79,7 @@
     :pentium3 :pentium4
     :mips :mipsel :loongarch64 :riscv
     :java-1.4 :java-1.5 :java-1.6 :java-1.7
-    :wasm32 :wasm64))
+    :wasm32 :wasm64 :vlm))
 
 (defun q (s) (read-from-string s))
 
@@ -98,8 +99,9 @@
           (core:lisp-implementation-id)))
 
 (defun lisp-version-string ()
-  #+(or clozure cmu) (substitute-if #\_ (lambda (x) (find x " /"))
-                                    (lisp-implementation-version))
+  #+(or clozure cmu genera)
+  (substitute-if #\_ (lambda (x) (find x " /"))
+                 (lisp-implementation-version))
   #+(or cormanlisp scl mkcl) (lisp-implementation-version)
   #+sbcl (format nil "~a~:[~;-no-threads~]"
                  (lisp-implementation-version)
