@@ -1,4 +1,4 @@
-;;; -*- indent-tabs-mode: nil; coding: latin-1-unix -*-
+;;; -*- Mode: LISP; Package: SWANK/RPC; BASE: 10; Syntax: ANSI-Common-Lisp; indent-tabs-mode: nil; coding: latin-1-unix -*-
 ;;;
 ;;; swank-rpc.lisp  -- Pass remote calls and responses between lisp systems.
 ;;;
