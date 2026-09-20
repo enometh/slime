@@ -62,7 +62,7 @@
   #+mkcl '((swank source-file-cache) (swank mkcl) (swank gray))
   #+mezzano '((swank mezzano) (swank gray))
   #+dotcl '((swank dotcl) (swank gray))
-  #+genera '((swank genera))
+  #+genera '((swank genera) (swank gray))
   )
 
 (defparameter *implementation-features*
