@@ -2607,8 +2607,8 @@ Record compiler notes signalled as `compiler-condition's."
     (unless (member (string module) *modules* :test #'string=)
       (catch 'dont-load
         (require module (if filename
-                            (filename-to-pathname filename)
-                            (module-filename module)))
+                            (list (filename-to-pathname filename))
+                            (list (module-filename module))))
         (with-simple-restart (skip "SKIP")
           (assert (member (string module) *modules* :test #'string=)
                   () "Required module ~s was not provided" module)))))
