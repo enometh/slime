@@ -10,6 +10,9 @@
 
 (in-package swank/backend)
 
+#+ensure-ctf
+(ensure-ctf:ensure-ctf :eat-stas-boukarev-gray-bullshit)
+
 #.(progn
     (defvar *gray-stream-symbols*
     '(fundamental-character-output-stream

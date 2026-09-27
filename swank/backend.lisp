@@ -12,6 +12,9 @@
 
 (in-package swank)
 
+#+ensure-ctf
+(ensure-ctf:ensure-ctf :eat-stas-boukarev-gray-bullshit)
+
 ;;; Forward references
 (defvar *communication-style*)
 (defvar *swank-debugger-condition* nil

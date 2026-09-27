@@ -17,7 +17,9 @@
   (truename "~/elisp/pkg/slime/")
   #+nil
   (merge-pathnames "swank/" (translate-logical-pathname "EXTERN:")))
-(defvar *swank-binary-dir*  (binary-directory *swank-source-dir*))
+(defvar *swank-binary-dir*
+  (binary-directory *swank-source-dir*
+		    #-eat-stas-boukarev-gray-bullshit "nostas"))
 
 (load (merge-pathnames "swank-loader.lisp" *swank-source-dir*))
 
