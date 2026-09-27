@@ -21,7 +21,7 @@
 (defimplementation call-with-compilation-hooks (function)
   (funcall function))
 
-(defimplementation slynk-compile-string
+(defimplementation swank-compile-string
     (string &key buffer position filename line column policy)
   (declare (ignore line column policy))
   (with-input-from-string (stream string)
@@ -30,7 +30,7 @@
 (defimplementation command-line-args ()
   nil)
 
-(defimplementation slynk-compile-file (input-file output-file load-p
+(defimplementation swank-compile-file (input-file output-file load-p
                                              external-format
                                              &key policy)
   (declare (ignore policy))
