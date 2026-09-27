@@ -176,6 +176,8 @@ Return nil if nothing appropriate is available."
     :directory `(:relative ".slime" "fasl"
                  ,@(if (slime-version-string) (list (slime-version-string)))
                  ,(unique-dir-name)
+                 ,@(unless (find :eat-stas-boukarev-gray-bullshit *features*)
+                     '("nostas"))
                  ,@(if *load-truename* (cdr (pathname-directory *load-truename*)))))
    (user-homedir-pathname)))
 
