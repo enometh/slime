@@ -3,6 +3,9 @@
 ;; License: public domain
 (in-package swank)
 
+#+ensure-ctf
+(ensure-ctf:ensure-ctf :eat-stas-boukarev-gray-bullshit)
+
 (defpackage swank-repl
   (:use cl swank/backend)
   (:export *send-repl-results-function*
