@@ -11,7 +11,7 @@
 
 (in-package :swank)
 
-#+nil
+#+ensure-ctf
 (ensure-ctf:ensure-ctf :eat-stas-boukarev-gray-bullshit)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
