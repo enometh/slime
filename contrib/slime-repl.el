@@ -148,17 +148,19 @@ input start, return it.  Otherwise, return 'slime-repl-input-start-mark'."
   "Return the output buffer, create it if necessary."
   (let ((buffer (slime-connection-output-buffer)))
     (or (if (buffer-live-p buffer) buffer)
-        (setf (slime-connection-output-buffer)
-              (let ((connection (slime-connection)))
-                (with-current-buffer (slime-repl-buffer t connection)
-                  (unless (eq major-mode 'slime-repl-mode)
-                    (slime-repl-mode))
-                  (setq slime-buffer-connection connection)
-		  (setq slime-buffer-package (slime-lisp-package connection))
-                  (slime-reset-repl-markers)
-                  (unless noprompt
-                    (slime-repl-insert-prompt))
-                  (current-buffer)))))))
+	(if (find 'slime-repl slime-contribs)
+            (setf (slime-connection-output-buffer)
+		  (let ((connection (slime-connection)))
+                    (with-current-buffer (slime-repl-buffer t connection)
+                      (unless (eq major-mode 'slime-repl-mode)
+			(slime-repl-mode))
+                      (setq slime-buffer-connection connection)
+		      (setq slime-buffer-package (slime-lisp-package connection))
+                      (slime-reset-repl-markers)
+                      (unless noprompt
+			(slime-repl-insert-prompt))
+                      (current-buffer))))
+	  (message "slime-repl disabled")))))
 
 (defvar slime-repl-banner-function 'slime-repl-insert-banner)
 
