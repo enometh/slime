@@ -1,4 +1,4 @@
-;;; -*- Mode: LISP; Package: :cl-user; BASE: 10; Syntax: ANSI-Common-Lisp; -*-
+;;; -*- Mode: LISP; Package: (SWANK/GENERA :USE :CL); Syntax: ANSI-Common-Lisp; -*-
 ;;;
 ;;;   Time-stamp: <>
 ;;;   Touched: Mon Sep 14 06:41:48 2026 +0530 <enometh@net.meer>
@@ -12,6 +12,31 @@
 
 (defimplementation getpid ()
   0) ; TODO: implement
+
+
+(import-to-swank-mop '(clos-internals:class-finalized-p
+		       clos-internals::finalize-inheritance))
+
+(import-swank-mop-symbols
+  "CLOS"
+  '("EQL-SPECIALIZER"
+    "EQL-SPECIALIZER-OBJECT"
+    "CLASS-FINALIZED-P"
+    "SLOT-DEFINITION-DOCUMENTATION"
+    "COMPUTE-APPLICABLE-METHODS-USING-CLASSES"
+    "FINALIZE-INHERITANCE"))
+
+(defmethod swank-mop:compute-applicable-methods-using-classes (generic-function classes)
+  (values nil nil))
+
+(defun swank-mop:slot-definition-documentation (slot)
+  (documentation slot))
+
+;; ???
+(deftype swank-mop:eql-specializer () 'cons)
+
+(defun swank-mop:eql-specializer-object (eql-spec)
+  (second eql-spec))
 
 (defimplementation gray-package-name ()
   "GRAY-STREAMS")

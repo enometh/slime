@@ -1096,6 +1096,11 @@ If the arglist is not available, return :NOT-AVAILABLE."))
               :required-args (list (make-arglist
                                     :required-args (list typespec-arglist)
                                     :rest '#:variables)))))
+	  #+genera
+          (('declare ((#'symbolp decl-identifier) . decl-args))
+           (decoded-arglist-for-declaration decl-identifier decl-args))
+
+	  #-genera
           (('declare (decl-identifier . decl-args))
            (decoded-arglist-for-declaration decl-identifier decl-args))
           (_ (make-arglist :rest '#:declaration-specifiers))))))
