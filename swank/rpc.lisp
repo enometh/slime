@@ -159,4 +159,17 @@
   (loop while (peek-char T in NIL)
         collect (read-message in *package*)))
 
+(defparameter *transport*
+  (flexi-streams:with-output-to-sequence (out)
+    (let ((out (flexi-streams:make-flexi-stream out)))
+      (write-message '(:message (hello "world")) *package* out)
+      (write-message '(:return 5) *package* out)
+      (write-message '(:emacs-rex NIL) *package* out))))
+                 
+(flexi-streams:with-input-from-sequence (in *transport*)
+  (let ((in (flexi-streams:make-flexi-stream in)))
+    (loop for c = (read-char in nil)
+          repeat 5
+          while c do (unread-char c in)
+          collect (read-message in *package*))))
 |#
