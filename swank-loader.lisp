@@ -65,6 +65,13 @@
   #+genera '((swank genera) (swank gray))
   )
 
+#+slynk-generic
+(user::inveigle-slynk-generic '(:ccl :sbcl :genera)
+                              :subdir 'swank
+                              :var '*sysdep-files*
+                              :file 'generic
+                              :dry-run-p nil)
+
 (defparameter *implementation-features*
   '(:allegro :lispworks :sbcl :clozure :cmu :clisp :ccl :corman :cormanlisp
     :armedbear :gcl :ecl :scl :mkcl :clasp :mezzano :dotcl :genera))
