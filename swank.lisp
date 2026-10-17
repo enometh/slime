@@ -701,6 +701,9 @@ e.g.: (restart-loop (http-request url) (use-value (new) (setq url new)))"
       (ecase style
         (:spawn (initialize-multiprocessing
                  (lambda ()
+                   #-no-thanks-stas-boukarev
+                   (spawn #'serve-loop :name (format nil "Swank ~s" port))
+                   #+no-thanks-stas-boukarev
                    (if (or dont-close
                            *main-thread-used*)
                        (spawn #'serve-loop :name (format nil "Swank ~s" port))
