@@ -66,7 +66,7 @@
                                              &key policy)
   (declare (ignore policy))
   (compile-file input-file :output-file output-file :external-format
-		external-format (or external-format :default)))
+		(or external-format :default)))
 
 
 (defimplementation lisp-implementation-program ()
